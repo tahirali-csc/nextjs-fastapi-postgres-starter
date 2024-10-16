@@ -8,3 +8,8 @@ services:
       POSTGRES_PASSWORD: "postgres"
       POSTGRES_DB: "postgres"
     restart: always
+    volumes:
+      - /Users/tahir/workspace/rnd-projects/nextjs-fastapi-postgres-starter/data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
