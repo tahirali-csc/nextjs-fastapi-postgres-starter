@@ -8,8 +8,14 @@ const Chatbot: React.FC = () => {
     const [input, setInput] = useState<string>("");
     const [userId, setUserId] = useState<string>("");
     const [userName, setUserName] = useState<string>("");
+    // work around as useEffect is called twice in dev mode!!. Seems like a know thing
+    // but in prod, this will be called once
+    let didInit = false;
 
     let getCurrentUser = async () => {
+        if(didInit) return;
+        didInit = true;
+
         const response = await fetch(`${apiUrl}/users/me`);
         if (!response.ok) {
             throw new Error(`unable to get user`);
@@ -26,6 +32,7 @@ const Chatbot: React.FC = () => {
     };
 
     useEffect(() => {
+        console.log("loading 2 times")
         setMessages([])
         const fetchData = async () => {
             try {
@@ -89,7 +96,7 @@ const Chatbot: React.FC = () => {
             }}>
                 <h2>Simple Chatbox</h2>
                 <div style={{
-                    height: "300px",
+                    height: "600px",
                     overflowY: "auto",
                     border: "1px solid #ccc",
                     padding: "10px",

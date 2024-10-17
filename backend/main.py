@@ -103,7 +103,7 @@ async def get_messages(user_id: int):
             try:
                 result = await session.execute(select(Message)
                                                .filter(Message.user == user_id)
-                                               .order_by(Message.timestamp.desc()))
+                                               .order_by(Message.timestamp.asc()))
                 messages = result.scalars().all()
                 if not messages:
                     raise HTTPException(status_code=404, detail="User messages not found")
