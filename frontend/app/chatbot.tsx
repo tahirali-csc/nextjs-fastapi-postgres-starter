@@ -13,42 +13,48 @@ const Chatbot: React.FC =  () => {
     const [input, setInput] = useState<string>("");
     const [userId, setUserId] = useState<string>("");
 
-    // const apiUrl = '${apiUrl}/messages'; // Replace with your API URL
-    // const apiUrl = 'https://api.example.com'; // Replace with your API URL
+    let getCurrentUserId = async () => {
+        const response = await fetch(`${apiUrl}/users/me`);
+        if (!response.ok) {
+            throw new Error(`unable to get user`);
+        }
+        const result = await response.json();
+        return result.id;
+    };
+
+    let getUserMessages = async (userId: string) => {
+        const response = await fetch(`${apiUrl}/messages/${userId}`);
+        if (!response.ok) {
+            throw new Error(`unable to get messages`);
+        }
+        const result = await response.json();
+        return result.id;
+    };
+
+
 
       useEffect(() => {
-          console.log("running")
-        // Function to fetch data
+          setMessages([])
         const fetchData = async () => {
             try {
-                const response = await fetch(`${apiUrl}/users/me`);
-                const result = await response.json();
-                console.log(result.id)
-                setUserId(result.id)
+                let userId = await getCurrentUserId()
+                setUserId(userId)
 
-                const botMessages = await fetch(`${apiUrl}/messages/1`);
+                // const botMessages = await fetch(`${apiUrl}/messages/1`);
+                // if(!botMessages.ok) {
+                //     return
+                // }
+                const botMessages = await getUserMessages(userId)
                 const allMessages = await botMessages.json();
 
-                let newMessages = []
-                // console.log(allMessages)
-                setMessages([])
+                console.log("setting....")
                 for(const i in allMessages) {
-                    console.log("reply:", )
-                    // newMessages.push({type: "user", text: "what"})
-                    // setMessages({type: "user", text: "what"});
-                    // setMessages({type: "bot", text: "wola"});
-                    // newMessages.push({type: "bot", text: "hua"})
                     let userMessage = {type: "user", text: allMessages[i].message}
                     setMessages((prev) => [...prev, userMessage]);
 
                     let reply = {type: "bot", text: allMessages[i].reply}
                     setMessages((prev) => [...prev, reply]);
                 }
-                // console.log("newMessages",newMessages)
-
-                // setUserId(result.id)
-
-
             } catch (error) {
                 console.error("Error fetching data: ", error);
             }
@@ -77,13 +83,13 @@ const Chatbot: React.FC =  () => {
         setInput(""); // Clear the input after sending
 
         // Simulate bot response
-        const botResponse = { type: "bot", text: `You said: "${input}"` }; // Simple echo bot response
+        const botResponse = { type: "bot", text: user.json() }; // Simple echo bot response
         setMessages((prev) => [...prev, botResponse]);
     };
 
     return (
         <div style={{
-            maxWidth: "400px",
+            maxWidth: "600px",
             margin: "20px auto",
             padding: "20px",
             border: "1px solid #ccc",

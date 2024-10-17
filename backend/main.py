@@ -1,16 +1,19 @@
+import threading
 from typing import List
 
-from anyio.abc import value
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import select, insert
-from sqlalchemy.dialects.mysql import DATETIME
-
-from seed import seed_user_if_needed
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from reply_counter import ReplyCounter
 from db_engine import engine
 from models import User, Message
+from seed import seed_user_if_needed
+
+import random
 
 seed_user_if_needed()
 
@@ -48,32 +51,59 @@ class MessageCreate(BaseModel):
     user: str
 
 
-# API endpoint to receive and store a message or reply
+sample_responses = [
+    "Humans have this incredible ability to connect deeply with each other through empathy, "
+    "understanding each other's joys and pains as if they were their own. "
+    "Curiosity drives human progress. It's a relentless quest for knowledge and understanding that has led "
+    "to some of the most profound discoveries",
+    "Conflict is a part of human nature too. It stems from differing perspectives and can lead to "
+    "growth and understanding when addressed constructively",
+    "Compassion leads humans to act selflessly and help others, often putting others' needs before their own",
+    "Creativity is a hallmark of human nature. It's the spark that leads to art, music, innovation, "
+    "and all forms of expression that enrich our lives"
+]
+
+reply_counter = ReplyCounter(1, len(sample_responses))
+
+def get_response():
+    reply = sample_responses[reply_counter.get_value() - 1]
+    reply_counter.increment()
+    return reply
+
+# API endpoint to receive and store a message
 @app.post("/messages")
 async def create_message(message: MessageCreate):
     async with AsyncSession(engine) as session:
         async with session.begin():
-            # user_message = Message(message=message.message, user=message.user)
-            stmt = insert(Message).values(prompt=message.message, user=1, reply="kfjdshkjfhds")
-            await session.execute(stmt)
-
+            reply = get_response()
+            try:
+                await session.execute(insert(Message)
+                                      .values(prompt=message.message, user=int(message.user), reply=reply))
+                return reply
+            except IntegrityError as e:
+                print("data integrity error", e)
+                raise HTTPException(status_code=401, detail=str("user is unauthorized to create message"))
+            except Exception as e:
+                print("error in creating message ", e)
+                raise HTTPException(status_code=500, detail=str("unable to create message"))
 
 class MessageResponse(BaseModel):
     message: str
     reply: str
 
 @app.get("/messages/{user_id}",response_model=List[MessageResponse])
-async def get_my_user():
+async def user_messages(user_id: int):
     async with AsyncSession(engine) as session:
         async with session.begin():
-            # Sample logic to simplify getting the current user. There's only one user.
-            result = await session.execute(select(Message).filter(Message.user == 1))
+            result = await session.execute(select(Message)
+                                           .filter(Message.user == user_id)
+                                           .order_by(Message.timestamp.desc()))
             messages = result.scalars().all()
+            if not messages:
+                raise HTTPException(status_code=404, detail="User messages not found")
+
             response = [MessageResponse(message=msg.prompt, reply=msg.reply) for msg in messages]
             return response
-            # # print(result.scalars().all())
-            # if not messages:
-            #     raise HTTPException(status_code=404, detail="User or messages not found")
-            # return messages
+
 
 
