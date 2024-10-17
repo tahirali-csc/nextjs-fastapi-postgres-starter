@@ -1,4 +1,5 @@
 import threading
+import time
 from typing import List
 
 from fastapi import FastAPI, HTTPException
@@ -68,6 +69,10 @@ reply_counter = ReplyCounter(1, len(sample_responses))
 
 
 def get_response():
+    """
+     We could have used random() here, but we want unique replies, so
+     using thread safe counter.
+    """
     reply = sample_responses[reply_counter.get_value() - 1]
     reply_counter.increment()
     return reply
@@ -76,6 +81,7 @@ def get_response():
 # API endpoint to receive and store a message
 @app.post("/messages")
 async def create_message(message: MessageCreate):
+    time.sleep(4)
     async with AsyncSession(engine) as session:
         async with session.begin():
             reply = get_response()

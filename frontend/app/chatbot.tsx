@@ -10,12 +10,12 @@ const Chatbot: React.FC = () => {
     const [userName, setUserName] = useState<string>("");
     // work around as useEffect is called twice in dev mode!!. Seems like a know thing
     // but in prod, this will be called once
-    let didInit = false;
+    let didInit: boolean = false;
+
+    let [errorMessage, setErrorMessage] = useState<string>("");
+    const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
     let getCurrentUser = async () => {
-        if(didInit) return;
-        didInit = true;
-
         const response = await fetch(`${apiUrl}/users/me`);
         if (!response.ok) {
             throw new Error(`unable to get user`);
@@ -32,8 +32,9 @@ const Chatbot: React.FC = () => {
     };
 
     useEffect(() => {
-        console.log("loading 2 times")
-        setMessages([])
+        if (didInit) return;
+        didInit = true;
+
         const fetchData = async () => {
             try {
                 let currentUser = await getCurrentUser();
@@ -49,39 +50,58 @@ const Chatbot: React.FC = () => {
                     setMessages((prev) => [...prev, reply]);
                 }
             } catch (error) {
-                console.error("Error fetching data: ", error);
+                setErrorMessage("Error getting user messages")
             }
         };
 
+        setMessages([])
+        setErrorMessage("")
         fetchData();
     }, []);
 
     const handleSend = async () => {
         if (input.trim() === "") return; // Prevent sending empty messages
 
-        const userMessage = {type: "user", text: input};
+        setErrorMessage("")
+        setIsProcessing(true);
 
-        const user = await fetch(`${apiUrl}/messages`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                "message": input,
-                "user": userId.toString(),
-            }),
-        });
+        try {
+            const userMessage = {type: "user", text: input};
+            const res = await fetch(`${apiUrl}/messages`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    "message": input,
+                    "user": userId.toString(),
+                }),
+            });
 
-        setMessages((prev) => [...prev, userMessage]);
-        setInput(""); // Clear the input after sending
+            if (!res.ok) {
+                setErrorMessage("unable to send message")
+                return;
+            }
 
-        // Simulate bot response
-        const botResponse = {type: "bot", text: user.json()}; // Simple echo bot response
-        setMessages((prev) => [...prev, botResponse]);
+            setMessages((prev) => [...prev, userMessage]);
+            setInput(""); // Clear the input after sending
+
+            // Print the bot response
+
+            const botResponse = {type: "bot", text: res.json()}; // Simple echo bot response
+            setMessages((prev) => [...prev, botResponse]);
+
+
+            console.log("isProcessing:", isProcessing)
+        } catch (error) {
+            setErrorMessage("unable to process message")
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
-    const isSendDisabled = ()=>{
-        return input.trim().length == 0;
+    const isSendDisabled = () => {
+        return input.trim().length == 0 || isProcessing;
     }
 
     return (
@@ -125,11 +145,14 @@ const Chatbot: React.FC = () => {
                     style={{width: "80%", padding: "10px", color: "black"}}
                     placeholder="Type a message..."
                 />
-                <button onClick={handleSend} style={{padding: "10px", marginLeft: "10px",
-                        backgroundColor: isSendDisabled() ? 'gray' : 'blue' }}
+                <button onClick={handleSend} style={{
+                    padding: "10px", marginLeft: "10px",
+                    backgroundColor: isSendDisabled() ? 'gray' : 'blue'
+                }}
                         disabled={isSendDisabled()}>
                     Send
                 </button>
+                <span style={{color: "red"}}>{errorMessage}</span>
             </div>
         </div>
     );
