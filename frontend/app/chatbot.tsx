@@ -50,12 +50,11 @@ const Chatbot: React.FC = () => {
                     setMessages((prev) => [...prev, reply]);
                 }
             } catch (error) {
-                setErrorMessage("Error getting user messages")
+                console.log(error)
             }
         };
 
         setMessages([])
-        setErrorMessage("")
         fetchData();
     }, []);
 

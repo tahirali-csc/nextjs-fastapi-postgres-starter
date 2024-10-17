@@ -81,7 +81,6 @@ def get_response():
 # API endpoint to receive and store a message
 @app.post("/messages")
 async def create_message(message: MessageCreate):
-    time.sleep(4)
     async with AsyncSession(engine) as session:
         async with session.begin():
             reply = get_response()
@@ -111,11 +110,14 @@ async def get_messages(user_id: int):
                                                .filter(Message.user == user_id)
                                                .order_by(Message.timestamp.asc()))
                 messages = result.scalars().all()
-                if not messages:
+                print(not messages or len(messages))
+                if not messages or len(messages) == 0:
                     raise HTTPException(status_code=404, detail="User messages not found")
 
                 response = [MessageResponse(message=msg.prompt, reply=msg.reply) for msg in messages]
                 return response
+            except HTTPException as e:
+                raise
             except Exception as e:
-                print(f"error in getting ${user_id} messages ", e)
+                print(f"error in getting ${user_id} messages {str(e)}")
                 raise HTTPException(status_code=500, detail=str("unable to get messages"))
