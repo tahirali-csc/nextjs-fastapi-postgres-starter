@@ -73,6 +73,10 @@ const Chatbot: React.FC = () => {
         setMessages((prev) => [...prev, botResponse]);
     };
 
+    const isSendDisabled = ()=>{
+        return input.trim().length == 0;
+    }
+
     return (
         <div>
             Hello, {userName}!
@@ -114,7 +118,9 @@ const Chatbot: React.FC = () => {
                     style={{width: "80%", padding: "10px", color: "black"}}
                     placeholder="Type a message..."
                 />
-                <button onClick={handleSend} style={{padding: "10px", marginLeft: "10px"}}>
+                <button onClick={handleSend} style={{padding: "10px", marginLeft: "10px",
+                        backgroundColor: isSendDisabled() ? 'gray' : 'blue' }}
+                        disabled={isSendDisabled()}>
                     Send
                 </button>
             </div>

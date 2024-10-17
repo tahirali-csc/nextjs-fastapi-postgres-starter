@@ -45,6 +45,7 @@ async def get_my_user():
                 raise HTTPException(status_code=404, detail="User not found")
             return UserRead(id=user.id, name=user.name)
 
+
 # Pydantic schema for message input validation
 class MessageCreate(BaseModel):
     message: str
@@ -65,10 +66,12 @@ sample_responses = [
 
 reply_counter = ReplyCounter(1, len(sample_responses))
 
+
 def get_response():
     reply = sample_responses[reply_counter.get_value() - 1]
     reply_counter.increment()
     return reply
+
 
 # API endpoint to receive and store a message
 @app.post("/messages")
@@ -87,11 +90,13 @@ async def create_message(message: MessageCreate):
                 print("error in creating message ", e)
                 raise HTTPException(status_code=500, detail=str("unable to create message"))
 
+
 class MessageResponse(BaseModel):
     message: str
     reply: str
 
-@app.get("/messages/{user_id}",response_model=List[MessageResponse])
+
+@app.get("/messages/{user_id}", response_model=List[MessageResponse])
 async def get_messages(user_id: int):
     async with AsyncSession(engine) as session:
         async with session.begin():
