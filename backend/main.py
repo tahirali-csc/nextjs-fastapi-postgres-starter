@@ -92,18 +92,19 @@ class MessageResponse(BaseModel):
     reply: str
 
 @app.get("/messages/{user_id}",response_model=List[MessageResponse])
-async def user_messages(user_id: int):
+async def get_messages(user_id: int):
     async with AsyncSession(engine) as session:
         async with session.begin():
-            result = await session.execute(select(Message)
-                                           .filter(Message.user == user_id)
-                                           .order_by(Message.timestamp.desc()))
-            messages = result.scalars().all()
-            if not messages:
-                raise HTTPException(status_code=404, detail="User messages not found")
+            try:
+                result = await session.execute(select(Message)
+                                               .filter(Message.user == user_id)
+                                               .order_by(Message.timestamp.desc()))
+                messages = result.scalars().all()
+                if not messages:
+                    raise HTTPException(status_code=404, detail="User messages not found")
 
-            response = [MessageResponse(message=msg.prompt, reply=msg.reply) for msg in messages]
-            return response
-
-
-
+                response = [MessageResponse(message=msg.prompt, reply=msg.reply) for msg in messages]
+                return response
+            except Exception as e:
+                print(f"error in getting ${user_id} messages ", e)
+                raise HTTPException(status_code=500, detail=str("unable to get messages"))
