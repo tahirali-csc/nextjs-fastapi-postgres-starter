@@ -87,14 +87,10 @@ const Chatbot: React.FC = () => {
             setInput(""); // Clear the input after sending
 
             // Print the bot response
-
             const botResponse = {type: "bot", text: res.json()}; // Simple echo bot response
             setMessages((prev) => [...prev, botResponse]);
-
-
-            console.log("isProcessing:", isProcessing)
         } catch (error) {
-            setErrorMessage("unable to process message")
+            setErrorMessage("unable to send message")
         } finally {
             setIsProcessing(false);
         }
