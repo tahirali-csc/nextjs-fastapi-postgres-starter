@@ -1,5 +1,3 @@
-import threading
-import time
 from typing import List
 
 from fastapi import FastAPI, HTTPException
@@ -9,12 +7,10 @@ from sqlalchemy import select, insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from reply_counter import ReplyCounter
+from reply_service import get_response
 from db_engine import engine
 from models import User, Message
 from seed import seed_user_if_needed
-
-import random
 
 seed_user_if_needed()
 
@@ -50,32 +46,7 @@ async def get_my_user():
 # Pydantic schema for message input validation
 class MessageCreate(BaseModel):
     message: str
-    user: str
-
-
-sample_responses = [
-    "Humans have this incredible ability to connect deeply with each other through empathy, "
-    "understanding each other's joys and pains as if they were their own. "
-    "Curiosity drives human progress. It's a relentless quest for knowledge and understanding that has led "
-    "to some of the most profound discoveries",
-    "Conflict is a part of human nature too. It stems from differing perspectives and can lead to "
-    "growth and understanding when addressed constructively",
-    "Compassion leads humans to act selflessly and help others, often putting others' needs before their own",
-    "Creativity is a hallmark of human nature. It's the spark that leads to art, music, innovation, "
-    "and all forms of expression that enrich our lives"
-]
-
-reply_counter = ReplyCounter(1, len(sample_responses))
-
-
-def get_response():
-    """
-     We could have used random() here, but we want unique replies, so
-     using thread safe counter.
-    """
-    reply = sample_responses[reply_counter.get_value() - 1]
-    reply_counter.increment()
-    return reply
+    userId: int
 
 
 # API endpoint to receive and store a message
@@ -86,7 +57,7 @@ async def create_message(message: MessageCreate):
             reply = get_response()
             try:
                 await session.execute(insert(Message)
-                                      .values(prompt=message.message, user=int(message.user), reply=reply))
+                                      .values(prompt=message.message, user=message.userId, reply=reply))
                 return reply
             except IntegrityError as e:
                 print("data integrity error", e)

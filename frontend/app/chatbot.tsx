@@ -73,7 +73,7 @@ const Chatbot: React.FC = () => {
                 },
                 body: JSON.stringify({
                     "message": input,
-                    "user": userId.toString(),
+                    "userId": userId.toString(),
                 }),
             });
 
